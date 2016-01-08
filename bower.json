@@ -12,5 +12,8 @@
     "angularjs-directive",
     "google-maps"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "ng-lodash": "~0.3.0"
+  }
 }

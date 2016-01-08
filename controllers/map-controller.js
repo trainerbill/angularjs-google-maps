@@ -237,11 +237,13 @@
     if(options.triggerResize) {
       google.maps.event.trigger(vm.map, 'resize');
     }
+    /*
 
     $element.bind('$destroy', function() {
       NgMapPool.returnMapInstance(vm.map);
       NgMap.deleteMap(vm);
     });
+    */
   }; // __MapController
 
   __MapController.$inject = [

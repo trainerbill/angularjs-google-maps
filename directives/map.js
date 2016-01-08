@@ -57,8 +57,8 @@
   var mapDirective = function () {
     return {
       restrict: 'AE',
-      controller: '__MapController',
-      conrollerAs: 'ngmap'
+      controller: '__InitializeNgMapController',
+      conrollerAs: 'vm'
     };
   };
 

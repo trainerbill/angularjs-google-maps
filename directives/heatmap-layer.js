@@ -1,52 +1,63 @@
-/**
- * @ngdoc directive
- * @name heatmap-layer
- * @param Attr2Options {service} convert html attribute to Gogole map api options
- * @description
- *   Requires:  map directive
- *   Restrict To:  Element
- *
- * @example
- *
- * <map zoom="11" center="[41.875696,-87.624207]">
- *   <heatmap-layer data="taxiData"></heatmap-layer>
- * </map>
- */
 (function() {
   'use strict';
 
-  angular.module('ngMap').directive('heatmapLayer', [
-    'Attr2MapOptions', '$window', function(Attr2MapOptions, $window) {
-    var parser = Attr2MapOptions;
-    return {
-      restrict: 'E',
-      require: ['?^map','?^ngMap'],
+  angular
+  .module('ngMap')
+  .directive('heatmapLayer', heatmapLayer);
 
-      link: function(scope, element, attrs, mapController) {
-        mapController = mapController[0]||mapController[1];
+  DirectiveController.inject = ['$scope', 'NgMap'];
+  function DirectiveController($scope, NgMap) {
+    var vm = this;
 
-        var filtered = parser.filter(attrs);
+    console.log('heatmapLayerDirective::Init', vm);
+    NgMap.getHeatmap(vm.ngmapHeatmapId)
+      .then(function (heatmap) {
+        vm.heatmap = heatmap;
+      });
 
-        /**
-         * set options
-         */
-        var options = parser.getOptions(filtered, {scope: scope});
-        options.data = $window[attrs.data] || scope[attrs.data];
-        if (options.data instanceof Array) {
-          options.data = new google.maps.MVCArray(options.data);
-        } else {
-          throw "invalid heatmap data";
-        }
-        var layer = new google.maps.visualization.HeatmapLayer(options);
+    //Set Events
+    if (vm.ngmapEvents) {
+      NgMap.ready.then(function () {
+        NgMap.setEvents(vm.ngmapEvents);
+      });
+    }
 
-        /**
-         * set events
-         */
-        var events = parser.getEvents(scope, filtered);
-        console.log('heatmap-layer options', layer, 'events', events);
-
-        mapController.addObject('heatmapLayers', layer);
+    $scope.$watch('vm.ngmapData', function(newData, oldData) {
+      if (newData !== oldData) {
+        //console.log('Heatmap Data Changed', newData);
+        NgMap.ready.then(function () {
+          //console.log(vm.heatmap);
+          if (!vm.heatmap) {
+            vm.heatmap = new google.maps.visualization.HeatmapLayer({ data: newData, radius: vm.radius || 25 });
+            //console.log('New Heatmap', vm.heatmap);
+            NgMap.addHeatmap({ id: vm.ngmapHeatmapId, heatmap: vm.heatmap });
+          } else {
+            //console.log(vm.heatmap);
+            vm.heatmap.setData(newData);
+          }
+        });
       }
-     }; // return
-  }]);
-})();
+    });
+
+  }
+
+  function heatmapLayer() {
+    var directive = {
+      restrict: 'E',
+      require: ['?^ngMap'],
+      scope: {
+        ngmapHeatmapId: '@',
+        ngmapData: '=',
+        ngmapEvents: '=',
+
+        radius: '@'
+      },
+      controller: DirectiveController,
+      controllerAs: 'vm',
+      bindToController: true
+    };
+
+    return directive;
+  }
+
+ })();

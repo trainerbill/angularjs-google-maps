@@ -196,7 +196,7 @@
     }
   };
 
-  angular.module('ngMap').provider('NgMap', function() {
+  angular.module('ngMap').provider('NgMapOld', function() {
     var defaultOptions = {};
 
     /**

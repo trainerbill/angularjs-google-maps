@@ -1,72 +1,58 @@
-/**
- * @ngdoc directive
- * @name custom-control
- * @param Attr2Options {service} convert html attribute to Gogole map api options
- * @param $compile {service} AngularJS $compile service
- * @description
- *   Build custom control and set to the map with position
- *
- *   Requires:  map directive
- *
- *   Restrict To:  Element
- *
- * @attr {String} position position of this control
- *        i.e. TOP_RIGHT
- * @attr {Number} index index of the control
- * @example
- *
- * Example:
- *  <map center="41.850033,-87.6500523" zoom="3">
- *    <custom-control id="home" position="TOP_LEFT" index="1">
- *      <div style="background-color: white;">
- *        <b>Home</b>
- *      </div>
- *    </custom-control>
- *  </map>
- *
- */
 (function() {
   'use strict';
-  var parser, $compile, NgMap;
 
-  var linkFunc = function(scope, element, attrs, mapController) {
-    mapController = mapController[0]||mapController[1];
-    var filtered = parser.filter(attrs);
-    var options = parser.getOptions(filtered, {scope: scope});
-    var events = parser.getEvents(scope, filtered);
+  angular
+  .module('ngMap')
+  .directive('customControl', customControl);
 
-    /**
-     * build a custom control element
-     */
-    var customControlEl = element[0].parentElement.removeChild(element[0]);
-    $compile(customControlEl.innerHTML.trim())(scope);
+  DirectiveController.inject = ['$scope', 'NgMap', '$compile', '$element'];
+  function DirectiveController($scope, NgMap, $compile, $element) {
+    var vm = this;
 
-    /**
-     * set events
-     */
-    for (var eventName in events) {
-      google.maps.event.addDomListener(customControlEl, eventName, events[eventName]);
-    }
+    console.log('customToolsDirective::Init', vm);
 
-    mapController.addObject('customControls', customControlEl);
-    var position = options.position;
-    mapController.map.controls[google.maps.ControlPosition[position]].push(customControlEl);
+    //TODO  Not sure what this does but probably can be done better.
+    var customControlEl = $element[0].parentElement.removeChild($element[0]);
+    $compile(customControlEl.innerHTML.trim())($scope);
 
-    element.bind('$destroy', function() {
-      mapController.deleteObject('customControls', customControlEl);
+    NgMap.ready
+      .then(function (map) {
+        console.log(NgMap);
+        NgMap.map.controls[google.maps.ControlPosition[vm.position]].push(customControlEl);
+        NgMap.customControls.push(vm.position);
+      });
+
+
+    $element.bind('$destroy', function() {
+      //console.log('DestroyCustomControls', Map.customControls);
+      NgMap.map.controls[google.maps.ControlPosition[vm.position]].clear();
+      NgMap.customControls.splice(NgMap.customControls.indexOf(vm.position));
     });
-  };
 
-  var customControl =  function(Attr2MapOptions, _$compile_, _NgMap_)  {
-    parser = Attr2MapOptions, $compile = _$compile_, NgMap = _NgMap_;
+    /*
+    //If we need a watcher in the future
+    $scope.$watch('vm.ngmapData', function(newData, oldData) {
+      if (newData !== oldData) {
 
-    return {
+      }
+    });
+    */
+
+  }
+
+  function customControl() {
+    var directive = {
       restrict: 'E',
-      require: ['?^map','?^ngMap'],
-      link: linkFunc
-    }; // return
-  };
-  customControl.$inject = ['Attr2MapOptions', '$compile', 'NgMap'];
+      require: ['?^ngMap'],
+      scope: {
+        position: '@'
+      },
+      controller: DirectiveController,
+      controllerAs: 'vm',
+      bindToController: true
+    };
 
-  angular.module('ngMap').directive('customControl', customControl);
-})();
+    return directive;
+  }
+
+ })();

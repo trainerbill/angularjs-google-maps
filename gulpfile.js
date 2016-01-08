@@ -56,17 +56,25 @@ gulp.task('build-js', function() {
       'controllers/*.js',
       'directives/*.js',
       'filters/*.js',
-      'services/*.js'
+      'services/*.js',
+      'public/lib/ng-lodash/build/ng-lodash.min.js'
     ])
     .pipe(concat('ng-map.debug.js'))
+    .on("error", console.log)
     .pipe(gulp.dest('build/scripts'))
+    .on("error", console.log)
     .pipe(stripDebug())
+    .on("error", console.log)
     .pipe(concat('ng-map.js'))
+    .on("error", console.log)
     .pipe(gulp.dest('build/scripts'))
+    .on("error", console.log)
     .pipe(uglify())
+    .on("error", console.log)
     .pipe(rename('ng-map.min.js'))
+    .on("error", console.log)
     .pipe(gulp.dest('build/scripts'))
-    .on('error', gutil.log);
+    .on("error", console.log);
 });
 
 gulp.task('docs', function() {
@@ -152,4 +160,3 @@ gulp.task('examples:json', function() {
     ))
     .pipe(gulp.dest('testapp'));
 });
-
