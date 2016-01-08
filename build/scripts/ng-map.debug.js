@@ -983,15 +983,15 @@ angular.module('ngMap', ['ngLodash']);
 
     $scope.$watch('vm.ngmapData', function(newData, oldData) {
       if (newData !== oldData) {
-        //console.log('Heatmap Data Changed', newData);
+        console.log('Heatmap Data Changed', newData);
         NgMap.ready.then(function () {
           //console.log(vm.heatmap);
           if (!vm.heatmap) {
             vm.heatmap = new google.maps.visualization.HeatmapLayer({ data: newData, radius: vm.radius || 25 });
-            //console.log('New Heatmap', vm.heatmap);
+            console.log('New Heatmap', vm.heatmap);
             NgMap.addHeatmap({ id: vm.ngmapHeatmapId, heatmap: vm.heatmap });
           } else {
-            //console.log(vm.heatmap);
+            console.log('Existing Heatmap', vm.heatmap);
             vm.heatmap.setData(newData);
           }
         });
