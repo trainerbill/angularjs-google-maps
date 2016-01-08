@@ -998,6 +998,15 @@ angular.module('ngMap', ['ngLodash']);
       }
     });
 
+    $scope.$watch('vm.radius', function(newData, oldData) {
+      if (newData !== oldData) {
+        console.log('Radius Changed', newData);
+        NgMap.ready.then(function () {
+          vm.heatmap.setOptions({ radius: newData }); 
+        });
+      }
+    });
+
   }
 
   function heatmapLayer() {
@@ -1009,7 +1018,7 @@ angular.module('ngMap', ['ngLodash']);
         ngmapData: '=',
         ngmapEvents: '=',
 
-        radius: '@'
+        radius: '='
       },
       controller: DirectiveController,
       controllerAs: 'vm',
