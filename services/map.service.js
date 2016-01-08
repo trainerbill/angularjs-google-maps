@@ -32,8 +32,6 @@
         google.maps.event.addListenerOnce(map, 'idle', function() {
           service.map = map;
           readyPromise.resolve(service.map);
-          map.setCenter({ lat: 40.535164, lng: -99.094760});
-          map.setZoom(4);
           resolve(service);
         });
       });

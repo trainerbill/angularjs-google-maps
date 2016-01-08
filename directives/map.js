@@ -1,67 +1,90 @@
-/**
- * @ngdoc directive
- * @memberof ngMap
- * @name ng-map
- * @param Attr2Options {service}
- *  convert html attribute to Gogole map api options
- * @description
- * Implementation of {@link __MapController}
- * Initialize a Google map within a `<div>` tag
- *   with given options and register events
- *
- * @attr {Expression} map-initialized
- *   callback function when map is initialized
- *   e.g., map-initialized="mycallback(map)"
- * @attr {Expression} geo-callback if center is an address or current location,
- *   the expression is will be executed when geo-lookup is successful.
- *   e.g., geo-callback="showMyStoreInfo()"
- * @attr {Array} geo-fallback-center
- *   The center of map incase geolocation failed. i.e. [0,0]
- * @attr {Object} geo-location-options
- *  The navigator geolocation options.
- *  e.g., { maximumAge: 3000, timeout: 5000, enableHighAccuracy: true }.
- *  If none specified, { timeout: 5000 }.
- *  If timeout not specified, timeout: 5000 added
- * @attr {Boolean} zoom-to-include-markers
- *  When true, map boundary will be changed automatially
- *  to include all markers when initialized
- * @attr {Boolean} default-style
- *  When false, the default styling,
- *  `display:block;height:300px`, will be ignored.
- * @attr {String} &lt;MapOption> Any Google map options,
- *  https://developers.google.com/maps/documentation/javascript/reference?csw=1#MapOptions
- * @attr {String} &lt;MapEvent> Any Google map events,
- *  https://rawgit.com/allenhwkim/angularjs-google-maps/master/build/map_events.html
- * @attr {Boolean} single-info-window
- *  When true the map will only display one info window at the time,
- *  if not set or false,
- *  everytime an info window is open it will be displayed with the othe one.
- * @attr {Boolean} trigger-resize
- *  Default to false.  Set to true to trigger resize of the map.  Needs to be done anytime you resize the map
- * @example
- * Usage:
- *   <map MAP_OPTIONS_OR_MAP_EVENTS ..>
- *     ... Any children directives
- *   </map>
- *
- * Example:
- *   <map center="[40.74, -74.18]" on-click="doThat()">
- *   </map>
- *
- *   <map geo-fallback-center="[40.74, -74.18]" zoom-to-inlude-markers="true">
- *   </map>
- */
-(function () {
+(function() {
   'use strict';
 
-  var mapDirective = function () {
-    return {
-      restrict: 'AE',
-      controller: '__InitializeNgMapController',
-      conrollerAs: 'vm'
-    };
-  };
+  angular
+  .module('ngMap')
+  .directive('ngMap', ngMap);
 
-  angular.module('ngMap').directive('map', [mapDirective]);
-  angular.module('ngMap').directive('ngMap', [mapDirective]);
-})();
+  DirectiveController.$inject = [ '$element', '$attrs', 'MapPool', 'lodash', '$scope', '$compile', 'NgMap' ];
+  function DirectiveController($element, $attrs, MapPool, lodash, $scope, $compile, NgMap) {
+    var vm = this;
+
+    console.log('ngMapDirective::Init', vm);
+
+    MapPool
+      .getMap($element)
+      .then(function (map) {
+        vm.map = map;
+        mapInit(map);
+      })
+      .catch(function (err) {
+        console.log('Failed map load');
+      });
+
+      //Watchers
+      if (vm.center) {
+        $scope.$watch('vm.center', function(newData, oldData) {
+          if (newData !== oldData) {
+            console.log('Center Changed', newData);
+            NgMap.ready.then(function () {
+              var center = newData;
+              if (!(center instanceof google.maps.LatLng)) {
+                center = new google.maps.LatLng(newData);
+              }
+              NgMap.map.setCenter(center);
+            });
+          }
+        });
+      }
+
+      if (vm.zoom) {
+        $scope.$watch('vm.zoom', function(newData, oldData) {
+          if (newData !== oldData) {
+            console.log('Zoom Changed', newData);
+            NgMap.ready.then(function () {
+              NgMap.map.setZoom(newData);
+            });
+          }
+        });
+      }
+
+      function mapInit(map) {
+        //Set Center
+        if (vm.center) {
+          var center = vm.center;
+          if (!(center instanceof google.maps.LatLng)) {
+            center = new google.maps.LatLng(vm.center);
+          }
+          map.setCenter(center);
+        } else {
+          map.setCenter({ lat: 38.57641981479348, lng: -95.40967999999997 });
+        }
+
+        //setZoom
+        if (vm.zoom) {
+          map.setZoom(vm.zoom);
+        } else {
+          map.setZoom(4);
+        }
+      }
+  }
+
+  function ngMap() {
+    var directive = {
+      restrict: 'AE',
+      scope: {
+        ngmapId: '@',
+        center: '=',
+        zoom: '='
+      },
+      controller: DirectiveController,
+      controllerAs: 'vm',
+      bindToController: true
+    };
+
+    return directive;
+  }
+
+
+
+ })();
