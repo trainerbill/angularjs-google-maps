@@ -345,28 +345,42 @@ angular.module('ngMap', ['ngLodash']);
   .module('ngMap')
   .directive('customControl', customControl);
 
-  DirectiveController.inject = ['$scope', 'NgMap', '$compile', '$element'];
-  function DirectiveController($scope, NgMap, $compile, $element) {
+  DirectiveController.inject = ['$q', '$scope','$compile', '$element'];
+  function DirectiveController($q, $scope, $compile, $element) {
     var vm = this;
 
+    //Wait for NgMapDirective to resolve the map
+    vm.parentPromise = $q.defer();
+    vm.mapReady = vm.parentPromise.promise;
+
+    void 0;
     void 0;
 
-    //TODO  Not sure what this does but probably can be done better.
-    var customControlEl = $element[0].parentElement.removeChild($element[0]);
-    $compile(customControlEl.innerHTML.trim())($scope);
+    //var customContolEl = $element[0].innerHTML;
+    //$element[0].remove();
+    $element.hide();
 
-    NgMap.ready
-      .then(function (map) {
+
+    vm.mapReady
+      .then(function (ngMap) {
+        vm.ngMap = ngMap;
+
         void 0;
-        NgMap.map.controls[google.maps.ControlPosition[vm.position]].push(customControlEl);
-        NgMap.customControls.push(vm.position);
+
+        //$compile(customControlEl.innerHTML.trim())($scope);
+        ngMap.map.controls[google.maps.ControlPosition[vm.position]].push($element.get()[0]);
+        void 0;
+        ngMap.map.controls[google.maps.ControlPosition[vm.position]].getAt(0).style.display = 'initial';
+        void 0;
+        ngMap.customControls.push(vm.position);
+
       });
 
 
     $element.bind('$destroy', function() {
       //console.log('DestroyCustomControls', Map.customControls);
-      NgMap.map.controls[google.maps.ControlPosition[vm.position]].clear();
-      NgMap.customControls.splice(NgMap.customControls.indexOf(vm.position));
+      vm.ngMap.map.controls[google.maps.ControlPosition[vm.position]].clear();
+      vm.ngMap.customControls.splice(vm.ngMap.customControls.indexOf(vm.position));
     });
 
     /*
@@ -383,13 +397,19 @@ angular.module('ngMap', ['ngLodash']);
   function customControl() {
     var directive = {
       restrict: 'E',
-      require: ['?^ngMap'],
+      require: ['^ngMap'],
       scope: {
         position: '@'
       },
       controller: DirectiveController,
       controllerAs: 'vm',
-      bindToController: true
+      bindToController: true,
+      link: function(scope, iElement, iAttrs, parentController) {
+        parentController[0].mapRendered
+          .then(function (map) {
+            scope.vm.parentPromise.resolve(map);
+          });
+      }
     };
 
     return directive;
@@ -964,32 +984,39 @@ angular.module('ngMap', ['ngLodash']);
   .module('ngMap')
   .directive('heatmapLayer', heatmapLayer);
 
-  DirectiveController.inject = ['$scope', 'NgMap'];
-  function DirectiveController($scope, NgMap) {
+  DirectiveController.inject = ['$q', '$scope', 'NgMap'];
+  function DirectiveController($q, $scope, NgMap) {
     var vm = this;
 
+    //Wait for NgMapDirective to resolve the map
+    vm.parentPromise = $q.defer();
+    vm.mapReady = vm.parentPromise.promise;
+
+
     void 0;
-    NgMap.getHeatmap(vm.ngmapHeatmapId)
-      .then(function (heatmap) {
-        vm.heatmap = heatmap;
-      });
+    vm.mapReady.then(function (map) {
+      map.getHeatmap(vm.ngmapHeatmapId)
+        .then(function (heatmap) {
+          vm.heatmap = heatmap;
+        });
+    });
 
     //Set Events
     if (vm.ngmapEvents) {
-      NgMap.ready.then(function () {
-        NgMap.setEvents(vm.ngmapEvents);
+      vm.mapReady.then(function (map) {
+        map.setEvents(vm.ngmapEvents);
       });
     }
 
     $scope.$watch('vm.ngmapData', function(newData, oldData) {
       if (newData !== oldData) {
         void 0;
-        NgMap.ready.then(function () {
+        vm.mapReady.then(function (map) {
           //console.log(vm.heatmap);
           if (!vm.heatmap) {
             vm.heatmap = new google.maps.visualization.HeatmapLayer({ data: newData, radius: vm.radius || 25 });
             void 0;
-            NgMap.addHeatmap({ id: vm.ngmapHeatmapId, heatmap: vm.heatmap });
+            map.addHeatmap({ id: vm.ngmapHeatmapId, heatmap: vm.heatmap });
           } else {
             void 0;
             vm.heatmap.setData(newData);
@@ -1001,8 +1028,8 @@ angular.module('ngMap', ['ngLodash']);
     $scope.$watch('vm.radius', function(newData, oldData) {
       if (newData !== oldData) {
         void 0;
-        NgMap.ready.then(function () {
-          vm.heatmap.setOptions({ radius: newData }); 
+        vm.mapReady.then(function () {
+          vm.heatmap.setOptions({ radius: newData });
         });
       }
     });
@@ -1012,17 +1039,22 @@ angular.module('ngMap', ['ngLodash']);
   function heatmapLayer() {
     var directive = {
       restrict: 'E',
-      require: ['?^ngMap'],
+      require: ['^ngMap'],
       scope: {
         ngmapHeatmapId: '@',
         ngmapData: '=',
         ngmapEvents: '=',
-
         radius: '='
       },
       controller: DirectiveController,
       controllerAs: 'vm',
-      bindToController: true
+      bindToController: true,
+      link: function(scope, iElement, iAttrs, parentController) {
+        parentController[0].mapReady
+          .then(function (map) {
+            scope.vm.parentPromise.resolve(map);
+          });
+      }
     };
 
     return directive;
@@ -1505,20 +1537,48 @@ angular.module('ngMap', ['ngLodash']);
   .module('ngMap')
   .directive('ngMap', ngMap);
 
-  DirectiveController.$inject = [ '$element', '$attrs', 'MapPool', 'lodash', '$scope', '$compile', 'NgMap' ];
-  function DirectiveController($element, $attrs, MapPool, lodash, $scope, $compile, NgMap) {
+  DirectiveController.$inject = [ '$element', '$attrs', 'NgMapPool', 'lodash', '$scope', '$q'];
+  function DirectiveController($element, $attrs, NgMapPool, lodash, $scope, $q) {
     var vm = this;
+
+    //This Promise tells the child directives that the map is loaded and they can do their thing
+    var mapReady = $q.defer();
+    vm.mapReady = mapReady.promise;
+
+    //This Promise tells the child directives that the map is rendered and they can do their thing.  Used in custom controls
+    var mapRendered = $q.defer();
+    vm.mapRendered = mapRendered.promise;
 
     void 0;
 
-    MapPool
-      .getMap($element)
-      .then(function (map) {
-        vm.map = map;
-        mapInit(map);
-      })
-      .catch(function (err) {
+    NgMapPool
+      .createMap($element)
+      //New Map Created
+      .then(function (ngMap) {
         void 0;
+        ngMap.ready
+          .then(function () {
+            mapInit(ngMap);
+            mapReady.resolve(ngMap);
+          });
+        //Tell everyone the map has rendered
+        ngMap.rendered
+          .then(function () {
+            mapRendered.resolve(ngMap);
+          })
+      })
+      //Map found in pool
+      .catch(function (ngMap) {
+        void 0;
+        ngMap.ready
+          .then(function () {
+            mapReady.resolve(ngMap);
+          });
+        //Tell everyone the map has rendered
+        ngMap.rendered
+          .then(function () {
+            mapRendered.resolve(ngMap);
+          })
       });
 
       //Watchers
@@ -1548,25 +1608,31 @@ angular.module('ngMap', ['ngLodash']);
         });
       }
 
-      function mapInit(map) {
+      function mapInit(ngMap) {
+        void 0;
         //Set Center
         if (vm.center) {
           var center = vm.center;
           if (!(center instanceof google.maps.LatLng)) {
             center = new google.maps.LatLng(vm.center);
           }
-          map.setCenter(center);
+          ngMap.map.setCenter(center);
         } else {
-          map.setCenter({ lat: 38.57641981479348, lng: -95.40967999999997 });
+          ngMap.map.setCenter({ lat: 38.57641981479348, lng: -95.40967999999997 });
         }
 
         //setZoom
         if (vm.zoom) {
-          map.setZoom(vm.zoom);
+          ngMap.map.setZoom(vm.zoom);
         } else {
-          map.setZoom(4);
+          ngMap.map.setZoom(4);
         }
       }
+
+      $element.bind('$destroy', function() {
+        void 0;
+        //MapPool.returnMap(vm.map);
+      });
   }
 
   function ngMap() {
@@ -2783,100 +2849,106 @@ angular.module('ngMap', ['ngLodash']);
   NgMap.$inject = [ '$q', 'lodash' ];
   function NgMap($q, lodash) {
 
-    var readyPromise = $q.defer();
-    var service = {
-      id: null,
-      div: null,
-      map: null,
-      heatmaps: [],
-      data: [],
-      events: [],
-      customControls: [],
-      ready: readyPromise.promise,
-      initMap: initMap,
-      loadMap: loadMap,
-      addHeatmap: addHeatmap,
-      getHeatmap: getHeatmap,
-      setEvents: setEvents,
-      getEvent: getEvent
-    };
+    var ngMap = function () {
+      var readyPromise = $q.defer();
+      var renderedPromise = $q.defer();
 
-    function initMap(map) {
-      return $q(function(resolve, reject) {
-        google.maps.event.addListenerOnce(map, 'idle', function() {
-          service.map = map;
-          readyPromise.resolve(service.map);
-          resolve(service);
-        });
-      });
-    }
+      var service = {
+        id: null,
+        div: null,
+        map: null,
+        heatmaps: [],
+        data: [],
+        events: [],
+        customControls: [],
+        ready: readyPromise.promise,
+        rendered: renderedPromise.promise,
+        initMap: initMap,
+        addHeatmap: addHeatmap,
+        getHeatmap: getHeatmap,
+        setEvents: setEvents,
+        getEvent: getEvent,
+        resetReady: resetReady
+      };
 
-    //Load an existing map.  We already know its ready
-    function loadMap(map) {
-      return $q(function(resolve, reject) {
-        service.map = map.map;
-        service.id = map.id;
-        service.div = map.div;
-        resolve(service);
-      });
-    }
+      function resetReady() {
+        readyPromise = $q.defer();
+      }
 
-    function getHeatmap(id) {
-      return $q(function(resolve, reject) {
-        var heatmap = lodash.find(service.heatmaps, { id: id });
-        //console.log('Find HeatMap', heatmap);
-        ((heatmap) ? resolve(heatmap.heatmap) : reject());
-      });
-    }
-
-    function addHeatmap(heatmap) {
-      return $q(function(resolve, reject) {
-        getHeatmap(heatmap.id)
-          .then(function (find) {
-            find.setData(heatmap.heatmap.getData());
-            //service.heatmaps[service.heatmaps.indexOf(find)] = heatmap;
-            resolve(heatmap);
-          })
-          .catch(function () {
-            //console.log('Adding Heatmap', heatmap, Map.map);
-            service.heatmaps.push(heatmap);
-            heatmap.heatmap.setMap(service.map);
-            resolve(heatmap);
+      function initMap(map) {
+        return $q(function(resolve, reject) {
+          google.maps.event.addListenerOnce(map, 'idle', function() {
+            void 0;
+            service.map = map;
+            readyPromise.resolve(service.map);
+            resolve(service);
           });
-      });
-    }
 
-    function setEvents(events) {
-      return $q(function(resolve, reject) {
-        var listener;
-        void 0;
-        events.forEach(function (evnt) {
-          getEvent(evnt.type)
-            .then(function (serviceEvent) {
-              void 0;
-              google.maps.event.removeListener(serviceEvent.listener);
-              listener = google.maps.event.addListener(service.map, evnt.type, evnt.func);
-              serviceEvent.listener = listener;
+          google.maps.event.addListenerOnce(map, 'tilesloaded', function() {
+            void 0;
+            renderedPromise.resolve(service);
+          });
+        });
+      }
+
+      function getHeatmap(id) {
+        return $q(function(resolve, reject) {
+          var heatmap = lodash.find(service.heatmaps, { id: id });
+          //console.log('Find HeatMap', heatmap);
+          ((heatmap) ? resolve(heatmap.heatmap) : reject());
+        });
+      }
+
+      function addHeatmap(heatmap) {
+        return $q(function(resolve, reject) {
+          getHeatmap(heatmap.id)
+            .then(function (find) {
+              find.setData(heatmap.heatmap.getData());
+              //service.heatmaps[service.heatmaps.indexOf(find)] = heatmap;
+              resolve(heatmap);
             })
             .catch(function () {
-              listener = google.maps.event.addListener(service.map, evnt.type, evnt.func);
-              service.events.push({ type: evnt.type, listener: listener })
+              //console.log('Adding Heatmap', heatmap, Map.map);
+              service.heatmaps.push(heatmap);
+              heatmap.heatmap.setMap(service.map);
+              resolve(heatmap);
             });
         });
-      });
-    }
+      }
 
-    function getEvent(type) {
-      return $q(function(resolve, reject) {
-        void 0;
-        var evnt = lodash.find(service.events, { type: type });
-        void 0;
-        ((evnt) ? resolve(evnt) : reject());
-      });
-    }
+      function setEvents(events) {
+        return $q(function(resolve, reject) {
+          var listener;
+          void 0;
+          events.forEach(function (evnt) {
+            getEvent(evnt.type)
+              .then(function (serviceEvent) {
+                void 0;
+                google.maps.event.removeListener(serviceEvent.listener);
+                listener = google.maps.event.addListener(service.map, evnt.type, evnt.func);
+                serviceEvent.listener = listener;
+              })
+              .catch(function () {
+                listener = google.maps.event.addListener(service.map, evnt.type, evnt.func);
+                service.events.push({ type: evnt.type, listener: listener })
+              });
+          });
+        });
+      }
 
+      function getEvent(type) {
+        return $q(function(resolve, reject) {
+          void 0;
+          var evnt = lodash.find(service.events, { type: type });
+          void 0;
+          ((evnt) ? resolve(evnt) : reject());
+        });
+      }
 
-    return service;
+      return service;
+    };
+
+    return ngMap;
   }
 
 })();
@@ -3206,33 +3278,63 @@ angular.module('ngMap', ['ngLodash']);
 
   angular
     .module('ngMap')
-    .factory('MapPool', MapPool);
+    .service('NgMapPool', NgMapPool);
 
 
-  MapPool.$inject = [ '$q', 'lodash', 'GoogleMapApi', 'NgMap', '$compile'];
-  function MapPool($q, lodash, GoogleMapApi, NgMap, $compile) {
+  NgMapPool.$inject = [ '$q', 'lodash', 'GoogleMapApi', '$interval', 'NgMap'];
+  function NgMapPool($q, lodash, GoogleMapApi, $interval, NgMap) {
 
     //Array of Maps instances
     var maps = [];
 
     var factory = {
       getMap: getMap,
+      createMap: createMap,
       addMap: addMap,
-      createDiv: createDiv
+      returnMap: returnMap,
+      createDiv: createDiv,
     }
 
-    function getMap(el) {
+    //Creates a Map.  Resolves if one is created, rejects if one is found in the pool
+    function createMap(el) {
       return $q(function(resolve, reject) {
+        void 0;
+        void 0;
         var map = lodash.find(maps, { id: el[0].attributes['ngmap-id'].value });
         if (!map) {
+          void 0;
           createDiv(el)
             .then(addMap)
             .then(function (map) {
               resolve(map);
             });
         } else {
+          void 0;
           el.append(map.map.getDiv());
-          NgMap.loadMap(map);
+          reject(map);
+        }
+      });
+    }
+
+    function getMap(id) {
+      return $q(function(resolve, reject) {
+        var map = lodash.find(maps, { id: id });
+        if (!map) {
+          var i = 10
+          //Wait for map to load from directive
+          var mapWait = $interval(function () {
+            map = lodash.find(maps, { id: id });
+            if (map) {
+              $interval.cancel(mapWait);
+              resolve(map);
+            }
+          }, 100, i);
+          mapWait.then(function (current) {
+            if (i >= current) {
+              reject('Map Not Found');
+            }
+          })
+        } else {
           resolve(map);
         }
       });
@@ -3254,15 +3356,26 @@ angular.module('ngMap', ['ngLodash']);
 
     function addMap(mapDiv) {
       return $q(function(resolve, reject) {
-        NgMap.id = mapDiv.id;
-        NgMap.div = mapDiv;
+        var map = new NgMap();
+        map.id = mapDiv.id;
+        map.div = mapDiv;
         GoogleMapApi.then(function () {
-          var map = new google.maps.Map(NgMap.div, {});
-          NgMap.initMap(map);
-          maps.push(NgMap);
-          resolve(map);
+          var gmap = new google.maps.Map(map.div, {});
+          map.map = gmap;
+          maps.push(map);
+          void 0;
+          map.initMap(gmap).then(function () {
+            void 0;
+            resolve(map);
+          });
+
         });
       });
+    }
+
+    function returnMap(map) {
+      void 0;
+      //map.resetReady();
     }
 
 

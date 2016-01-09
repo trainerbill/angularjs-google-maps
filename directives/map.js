@@ -5,20 +5,48 @@
   .module('ngMap')
   .directive('ngMap', ngMap);
 
-  DirectiveController.$inject = [ '$element', '$attrs', 'MapPool', 'lodash', '$scope', '$compile', 'NgMap' ];
-  function DirectiveController($element, $attrs, MapPool, lodash, $scope, $compile, NgMap) {
+  DirectiveController.$inject = [ '$element', '$attrs', 'NgMapPool', 'lodash', '$scope', '$q'];
+  function DirectiveController($element, $attrs, NgMapPool, lodash, $scope, $q) {
     var vm = this;
+
+    //This Promise tells the child directives that the map is loaded and they can do their thing
+    var mapReady = $q.defer();
+    vm.mapReady = mapReady.promise;
+
+    //This Promise tells the child directives that the map is rendered and they can do their thing.  Used in custom controls
+    var mapRendered = $q.defer();
+    vm.mapRendered = mapRendered.promise;
 
     console.log('ngMapDirective::Init', vm);
 
-    MapPool
-      .getMap($element)
-      .then(function (map) {
-        vm.map = map;
-        mapInit(map);
+    NgMapPool
+      .createMap($element)
+      //New Map Created
+      .then(function (ngMap) {
+        console.log('MapReturn', ngMap);
+        ngMap.ready
+          .then(function () {
+            mapInit(ngMap);
+            mapReady.resolve(ngMap);
+          });
+        //Tell everyone the map has rendered
+        ngMap.rendered
+          .then(function () {
+            mapRendered.resolve(ngMap);
+          })
       })
-      .catch(function (err) {
-        console.log('Failed map load');
+      //Map found in pool
+      .catch(function (ngMap) {
+        console.log('MapReturn', ngMap);
+        ngMap.ready
+          .then(function () {
+            mapReady.resolve(ngMap);
+          });
+        //Tell everyone the map has rendered
+        ngMap.rendered
+          .then(function () {
+            mapRendered.resolve(ngMap);
+          })
       });
 
       //Watchers
@@ -48,25 +76,31 @@
         });
       }
 
-      function mapInit(map) {
+      function mapInit(ngMap) {
+        console.log('mapInit', ngMap, vm);
         //Set Center
         if (vm.center) {
           var center = vm.center;
           if (!(center instanceof google.maps.LatLng)) {
             center = new google.maps.LatLng(vm.center);
           }
-          map.setCenter(center);
+          ngMap.map.setCenter(center);
         } else {
-          map.setCenter({ lat: 38.57641981479348, lng: -95.40967999999997 });
+          ngMap.map.setCenter({ lat: 38.57641981479348, lng: -95.40967999999997 });
         }
 
         //setZoom
         if (vm.zoom) {
-          map.setZoom(vm.zoom);
+          ngMap.map.setZoom(vm.zoom);
         } else {
-          map.setZoom(4);
+          ngMap.map.setZoom(4);
         }
       }
+
+      $element.bind('$destroy', function() {
+        console.log('Return Map', vm.map);
+        //MapPool.returnMap(vm.map);
+      });
   }
 
   function ngMap() {
