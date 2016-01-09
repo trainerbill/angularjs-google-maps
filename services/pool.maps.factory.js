@@ -6,11 +6,14 @@
     .service('NgMapPool', NgMapPool);
 
 
-  NgMapPool.$inject = [ '$q', 'lodash', 'GoogleMapApi', '$interval', 'NgMap'];
-  function NgMapPool($q, lodash, GoogleMapApi, $interval, NgMap) {
+  NgMapPool.$inject = [ '$q', 'lodash', 'GoogleMapApi', '$interval', 'NgMap', 'NgMapOptions'];
+  function NgMapPool($q, lodash, GoogleMapApi, $interval, NgMap, NgMapOptions) {
 
     //Array of Maps instances
     var maps = [];
+
+    //ngMap instance holder
+    var ngMap;
 
     var factory = {
       getMap: getMap,
@@ -27,8 +30,9 @@
         console.log('Finding Map', el[0].attributes['ngmap-id'].value);
         var map = lodash.find(maps, { id: el[0].attributes['ngmap-id'].value });
         if (!map) {
-          console.log('Creating Map', el);
-          createDiv(el)
+          ngMap = new NgMap(el[0].attributes['ngmap-id'].value);
+          ngMap.element = el;
+          createDiv(ngMap)
             .then(addMap)
             .then(function (map) {
               resolve(map);
@@ -65,35 +69,31 @@
       });
     }
 
-    function createDiv(el) {
+    function createDiv(ngMap) {
       return $q(function(resolve, reject) {
+
         var mapDiv = document.createElement("div");
         mapDiv.style.width = "100%";
         mapDiv.style.height = "100%";
         mapDiv.style.height = '700px';
+        mapDiv.setAttribute('id', ngMap.id);
 
-        mapDiv.setAttribute('id', el[0].attributes['ngmap-id'].value);
-        el.append(mapDiv);
+        ngMap.div = mapDiv;
+        ngMap.element.append(mapDiv);
 
-        resolve(mapDiv);
+        resolve(ngMap);
       });
     }
 
-    function addMap(mapDiv) {
+    function addMap(ngMap) {
       return $q(function(resolve, reject) {
-        var map = new NgMap();
-        map.id = mapDiv.id;
-        map.div = mapDiv;
         GoogleMapApi.then(function () {
-          var gmap = new google.maps.Map(map.div, {});
-          map.map = gmap;
-          maps.push(map);
-          console.log('This map', maps);
-          map.initMap(gmap).then(function () {
-            console.log('Map Added Successfully');
-            resolve(map);
-          });
-
+          ngMap.map = new google.maps.Map(ngMap.div, {});
+          ngMap.initMap()
+            .then(function () {
+              maps.push(ngMap);
+              resolve(ngMap);
+            });
         });
       });
     }

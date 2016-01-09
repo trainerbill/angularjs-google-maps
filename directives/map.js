@@ -50,8 +50,8 @@
       });
 
       //Watchers
-      if (vm.center) {
-        $scope.$watch('vm.center', function(newData, oldData) {
+      if (vm.ngmapCenter) {
+        $scope.$watch('vm.ngmapCenter', function(newData, oldData) {
           if (newData !== oldData) {
             console.log('Center Changed', newData);
             vm.mapReady.then(function (ngMap) {
@@ -65,8 +65,8 @@
         });
       }
 
-      if (vm.zoom) {
-        $scope.$watch('vm.zoom', function(newData, oldData) {
+      if (vm.ngmapZoom) {
+        $scope.$watch('vm.ngmapZoom', function(newData, oldData) {
           if (newData !== oldData) {
             console.log('Zoom Changed', newData);
             vm.mapReady.then(function (ngMap) {
@@ -108,8 +108,9 @@
       restrict: 'AE',
       scope: {
         ngmapId: '@',
-        center: '=',
-        zoom: '='
+        ngmapCenter: '=',
+        ngmapZoom: '=',
+        ngmapOptions: '='
       },
       controller: DirectiveController,
       controllerAs: 'vm',

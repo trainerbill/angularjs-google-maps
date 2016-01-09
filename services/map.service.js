@@ -9,17 +9,18 @@
   NgMap.$inject = [ '$q', 'lodash' ];
   function NgMap($q, lodash) {
 
-    var ngMap = function () {
+    var ngMap = function (id) {
       var readyPromise = $q.defer();
       var renderedPromise = $q.defer();
 
       var service = {
-        id: null,
+        id: id,
         div: null,
         map: null,
         heatmaps: [],
         data: [],
         events: [],
+        element: null,
         customControls: [],
         ready: readyPromise.promise,
         rendered: renderedPromise.promise,
@@ -35,16 +36,15 @@
         readyPromise = $q.defer();
       }
 
-      function initMap(map) {
+      function initMap() {
         return $q(function(resolve, reject) {
-          google.maps.event.addListenerOnce(map, 'idle', function() {
+          google.maps.event.addListenerOnce(service.map, 'idle', function() {
             console.log('Map is ready Yo!');
-            service.map = map;
             readyPromise.resolve(service.map);
             resolve(service);
           });
 
-          google.maps.event.addListenerOnce(map, 'tilesloaded', function() {
+          google.maps.event.addListenerOnce(service.map, 'tilesloaded', function() {
             console.log('Map is rendered Yo!');
             renderedPromise.resolve(service);
           });
