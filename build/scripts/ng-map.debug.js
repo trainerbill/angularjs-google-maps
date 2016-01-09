@@ -1601,7 +1601,7 @@ angular.module('ngMap', ['ngLodash']);
         $scope.$watch('vm.zoom', function(newData, oldData) {
           if (newData !== oldData) {
             console.log('Zoom Changed', newData);
-            vm.mapReady.ready.then(function (ngMap) {
+            vm.mapReady.then(function (ngMap) {
               ngMap.map.setZoom(newData);
             });
           }
