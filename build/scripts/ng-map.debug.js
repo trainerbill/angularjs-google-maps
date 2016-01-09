@@ -1586,12 +1586,12 @@ angular.module('ngMap', ['ngLodash']);
         $scope.$watch('vm.center', function(newData, oldData) {
           if (newData !== oldData) {
             console.log('Center Changed', newData);
-            NgMap.ready.then(function () {
+            vm.mapReady.then(function (ngMap) {
               var center = newData;
               if (!(center instanceof google.maps.LatLng)) {
                 center = new google.maps.LatLng(newData);
               }
-              NgMap.map.setCenter(center);
+              ngMap.map.setCenter(center);
             });
           }
         });
@@ -1601,8 +1601,8 @@ angular.module('ngMap', ['ngLodash']);
         $scope.$watch('vm.zoom', function(newData, oldData) {
           if (newData !== oldData) {
             console.log('Zoom Changed', newData);
-            NgMap.ready.then(function () {
-              NgMap.map.setZoom(newData);
+            vm.mapReady.ready.then(function (ngMap) {
+              ngMap.map.setZoom(newData);
             });
           }
         });
