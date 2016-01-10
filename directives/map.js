@@ -47,10 +47,12 @@
 
     function createGoogleMap(ngMap) {
       return $q(function(resolve, reject) {
-
         //Create Map div
         var mapDiv = document.createElement("div");
-        mapDiv.className = ngMap.class;
+
+        //Set ngmapClass or height as 300px;
+        ((vm.ngmapClass) ? mapDiv.className = vm.ngmapClass : mapDiv.style.height = '300px');
+
         mapDiv.setAttribute('id', ngMap.id);
         ngMap.div = mapDiv;
 
