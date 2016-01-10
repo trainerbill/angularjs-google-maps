@@ -389,7 +389,7 @@ angular.module('ngMap', ['ngLodash']);
       if (vm.ngmapOptions) {
         $scope.$watch('vm.ngmapOptions', function(newData, oldData) {
           if (newData !== oldData) {
-            console.log('Zoom Changed', newData);
+            console.log('MapOptions Changed', newData);
             vm.mapReady.then(function (ngMap) {
               ngMap.map.setOptions(vm.ngmapOptions);
             });
