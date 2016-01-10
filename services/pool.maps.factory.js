@@ -42,13 +42,15 @@
           var i = 10
           //Wait for map to load from directive
           var mapWait = $interval(function () {
+            console.log('Finding Map in Pool', id, maps);
             map = lodash.find(maps, { id: id });
             if (map) {
               $interval.cancel(mapWait);
               resolve(map);
             }
-          }, 100, i);
+          }, 1000, i);
           mapWait.then(function (current) {
+            console.log('Map Not Found Waiting', id, current);
             if (i >= current) {
               reject('Map Not Found');
             }

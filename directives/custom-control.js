@@ -29,9 +29,8 @@
 
         //$compile(customControlEl.innerHTML.trim())($scope);
         ngMap.map.controls[google.maps.ControlPosition[vm.position]].push($element.get()[0]);
-        console.log('displayingcustomTool!!!!!!!!!!!!!!!!!!!!!!!!!!!');
         ngMap.map.controls[google.maps.ControlPosition[vm.position]].getAt(0).style.display = 'initial';
-        console.log('GoogleCustomControl', ngMap.map.controls[google.maps.ControlPosition[vm.position]]);
+        //console.log('GoogleCustomControl', ngMap.map.controls[google.maps.ControlPosition[vm.position]]);
         ngMap.customControls.push(vm.position);
 
       });

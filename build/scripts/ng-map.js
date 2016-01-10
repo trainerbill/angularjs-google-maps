@@ -31,9 +31,8 @@ angular.module('ngMap', ['ngLodash']);
 
         //$compile(customControlEl.innerHTML.trim())($scope);
         ngMap.map.controls[google.maps.ControlPosition[vm.position]].push($element.get()[0]);
-        void 0;
         ngMap.map.controls[google.maps.ControlPosition[vm.position]].getAt(0).style.display = 'initial';
-        void 0;
+        //console.log('GoogleCustomControl', ngMap.map.controls[google.maps.ControlPosition[vm.position]]);
         ngMap.customControls.push(vm.position);
 
       });
@@ -79,32 +78,100 @@ angular.module('ngMap', ['ngLodash']);
 
  })();
 
-/**
- * @ngdoc directive
- * @name drawing-manager
- * @param Attr2Options {service} convert html attribute to Gogole map api options
- * @description
- *   Requires:  map directive
- *   Restrict To:  Element
- *
- * @example
- * Example:
- *
- *  <map zoom="13" center="37.774546, -122.433523" map-type-id="SATELLITE">
- *    <drawing-manager
- *      on-overlaycomplete="onMapOverlayCompleted()"
- *      position="ControlPosition.TOP_CENTER"
- *      drawingModes="POLYGON,CIRCLE"
- *      drawingControl="true"
- *      circleOptions="fillColor: '#FFFF00';fillOpacity: 1;strokeWeight: 5;clickable: false;zIndex: 1;editable: true;" >
- *    </drawing-manager>
- *  </map>
- *
- *  TODO: Add remove button.
- *  currently, for our solution, we have the shapes/markers in our own
- *  controller, and we use some css classes to change the shape button
- *  to a remove button (<div>X</div>) and have the remove operation in our own controller.
- */
+(function() {
+  'use strict';
+
+  angular
+  .module('ngMap')
+  .directive('drawingManager', drawingManager);
+
+  DirectiveController.inject = ['$q', '$scope'];
+  function DirectiveController($q, $scope) {
+    var vm = this;
+
+    //Wait for NgMapDirective to resolve the map
+    vm.parentPromise = $q.defer();
+    vm.mapReady = vm.parentPromise.promise;
+
+
+    void 0;
+
+    vm.mapReady.then(function (ngMap) {
+      vm.drawingManager = new google.maps.drawing.DrawingManager();
+      var options = vm.drawingManagerOptions;
+
+      //Change given options to the google equivalent
+      options.drawingControlOptions.drawingModes = drawingModesParse(options.drawingControlOptions.drawingModes);
+
+      //Change position to the google equivalent
+      options.drawingControlOptions.position = positionParse(options.drawingControlOptions.position);
+
+      void 0;
+
+      vm.drawingManager.setOptions(options);
+      vm.drawingManager.setMap(ngMap.map);
+    });
+
+
+    //Set Events
+    if (vm.drawingManagerEvents) {
+      vm.mapReady.then(function (map) {
+        map.setEvents(vm.vm.drawingManagerEvents);
+      });
+    }
+
+    $scope.$watch('vm.drawingManagerOptions', function(newData, oldData) {
+      if (newData !== oldData) {
+        void 0;
+        vm.mapReady.then(function (ngMap) {
+          newData.drawingControlOptions.drawingModes(newData.drawingControlOptions.drawingModes);
+          newData.drawingControlOptions.position = positionParse(newData.drawingControlOptions.position);
+          ngMap.map.setOptions(vm.drawingManagerOptions);
+        });
+      }
+    }, true);
+
+    function drawingModesParse(modes) {
+      var rmodes = [];
+      modes.forEach(function (mode) {
+        rmodes.push(google.maps.drawing.OverlayType[mode]);
+      });
+
+      return rmodes;
+    }
+
+    function positionParse(position) {
+      return google.maps.ControlPosition[position];
+    }
+
+  }
+
+  function drawingManager() {
+    var directive = {
+      restrict: 'E',
+      require: ['^ngMap'],
+      scope: {
+        drawingManagerEvents: '=',
+        drawingManagerOptions: '='
+      },
+      controller: DirectiveController,
+      controllerAs: 'vm',
+      bindToController: true,
+      link: function(scope, iElement, iAttrs, parentController) {
+        parentController[0].mapReady
+          .then(function (map) {
+            scope.vm.parentPromise.resolve(map);
+          });
+      }
+    };
+
+    return directive;
+  }
+
+ })();
+
+
+/*
 (function() {
   'use strict';
   angular.module('ngMap').directive('drawingManager', [
@@ -123,9 +190,7 @@ angular.module('ngMap', ['ngLodash']);
         var controlOptions = parser.getControlOptions(filtered);
         var events = parser.getEvents(scope, filtered);
 
-        /**
-         * set options
-         */
+
         var drawingManager = new google.maps.drawing.DrawingManager({
           drawingMode: options.drawingmode,
           drawingControl: options.drawingcontrol,
@@ -145,9 +210,7 @@ angular.module('ngMap', ['ngLodash']);
         });
 
 
-        /**
-         * set events
-         */
+
         for (var eventName in events) {
           google.maps.event.addListener(drawingManager, eventName, events[eventName]);
         }
@@ -161,6 +224,7 @@ angular.module('ngMap', ['ngLodash']);
     }; // return
   }]);
 })();
+*/
 
 (function() {
   'use strict';
@@ -617,13 +681,15 @@ angular.module('ngMap', ['ngLodash']);
           var i = 10
           //Wait for map to load from directive
           var mapWait = $interval(function () {
+            void 0;
             map = lodash.find(maps, { id: id });
             if (map) {
               $interval.cancel(mapWait);
               resolve(map);
             }
-          }, 100, i);
+          }, 1000, i);
           mapWait.then(function (current) {
+            void 0;
             if (i >= current) {
               reject('Map Not Found');
             }
