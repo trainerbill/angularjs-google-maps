@@ -1552,11 +1552,6 @@ angular.module('ngMap', ['ngLodash']);
       return false;
     }
 
-    if (!vm.ngmapOptions) {
-      console.log('You must set ngmap-options.  At minimal set it as an empty object.');
-      return false;
-    }
-
 
 
 
@@ -1594,21 +1589,26 @@ angular.module('ngMap', ['ngLodash']);
         //Add Map Div to element
         $element.append(mapDiv)
 
-        if (!vm.ngmapOptions) {
-          vm.ngmapOptions = {};
+        var options = vm.ngmapOptions;
+
+        if (!options) {
+          options = {
+            center: { lat: 37.783316, lng: -122.440023 },
+            zoom: 4
+          };
         }
         //Override options with center and zoom if set
         if (vm.ngmapCenter) {
-          vm.ngmapOptions.center = vm.ngmapCenter;
+          options.center = vm.ngmapCenter;
         }
         if (vm.ngmapZoom) {
-          vm.ngmapOptions.zoom = vm.ngmapZoom;
+          options.zoom = vm.ngmapZoom;
         }
 
         GoogleMapApi.then(function () {
-          ngMap.options.center = new google.maps.LatLng(ngMap.options.center);
+          ngMap.options.center = new google.maps.LatLng(options.center);
           console.log('Creating Map', ngMap);
-          ngMap.map = new google.maps.Map(ngMap.div, ngMap.options);
+          ngMap.map = new google.maps.Map(ngMap.div, options);
           ngMap.initMap()
             .then(function () {
               resolve(ngMap);
