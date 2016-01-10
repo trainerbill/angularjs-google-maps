@@ -145,7 +145,7 @@
               ngMap.map.setOptions(vm.ngmapOptions);
             });
           }
-        });
+        }, true);
       }
 
   }

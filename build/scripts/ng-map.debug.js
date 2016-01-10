@@ -394,7 +394,7 @@ angular.module('ngMap', ['ngLodash']);
               ngMap.map.setOptions(vm.ngmapOptions);
             });
           }
-        });
+        }, true);
       }
 
   }
