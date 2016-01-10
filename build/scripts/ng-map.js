@@ -3405,6 +3405,7 @@ angular.module('ngMap', ['ngLodash']);
 
     function getMap(id) {
       return $q(function(resolve, reject) {
+        id = id || 'ngmapDefault';
         var map = lodash.find(maps, { id: id });
         if (!map) {
           var i = 10
