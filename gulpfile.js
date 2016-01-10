@@ -53,9 +53,7 @@ gulp.task('clean', function() {
 gulp.task('build-js', function() {
   return gulp.src([
       'app.js',
-      'controllers/*.js',
       'directives/*.js',
-      'filters/*.js',
       'services/*.js',
       'public/lib/ng-lodash/build/ng-lodash.min.js'
     ])

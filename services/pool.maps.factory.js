@@ -6,8 +6,8 @@
     .service('NgMapPool', NgMapPool);
 
 
-  NgMapPool.$inject = [ '$q', 'lodash', 'GoogleMapApi', '$interval', 'NgMap', 'NgMapOptions'];
-  function NgMapPool($q, lodash, GoogleMapApi, $interval, NgMap, NgMapOptions) {
+  NgMapPool.$inject = [ '$q', 'lodash', 'GoogleMapApi', '$interval', 'NgMap'];
+  function NgMapPool($q, lodash, GoogleMapApi, $interval, NgMap) {
 
     //Array of Maps instances
     var maps = [];
