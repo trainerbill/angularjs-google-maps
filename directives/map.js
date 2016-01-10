@@ -5,9 +5,28 @@
   .module('ngMap')
   .directive('ngMap', ngMap);
 
-  DirectiveController.$inject = [ '$element', '$attrs', 'NgMapPool', 'lodash', '$scope', '$q'];
-  function DirectiveController($element, $attrs, NgMapPool, lodash, $scope, $q) {
+  DirectiveController.$inject = [ '$element', '$attrs', 'NgMapPool', 'lodash', '$scope', '$q', 'NgMap', 'GoogleMapApi'];
+  function DirectiveController($element, $attrs, NgMapPool, lodash, $scope, $q, NgMap, GoogleMapApi) {
     var vm = this;
+
+
+    if (!vm.ngmapId) {
+      console.log('You must set ngmap-id');
+      return false;
+    }
+
+    if (!vm.ngmapClass) {
+      console.log('You must set ngmap-class.  This is a CSS class that will set the height of the Google Map.  Ex: .ngMap500 { height: 500px; }');
+      return false;
+    }
+
+    if (!vm.ngmapOptions) {
+      console.log('You must set ngmap-options.  At minimal set it as an empty object.');
+      return false;
+    }
+
+
+
 
     //This Promise tells the child directives that the map is loaded and they can do their thing
     var mapReady = $q.defer();
@@ -19,34 +38,90 @@
 
     console.log('ngMapDirective::Init', vm);
 
+
+    //Functions
+    //Creates a NgMap Instance.
+    function createNgMap() {
+      return $q(function(resolve, reject) {
+        ngMap = new NgMap(vm.ngmapId);
+        ngMap.class = vm.ngmapClass;
+        ngMap.options = vm.ngmapOptions;
+        resolve(ngMap);
+      });
+    }
+
+    function createGoogleMap(ngMap) {
+      return $q(function(resolve, reject) {
+
+        //Create Map div
+        var mapDiv = document.createElement("div");
+        mapDiv.className = ngMap.class;
+        mapDiv.setAttribute('id', ngMap.id);
+        ngMap.div = mapDiv;
+
+        //Add Map Div to element
+        $element.append(mapDiv)
+
+        if (!vm.ngmapOptions) {
+          vm.ngmapOptions = {};
+        }
+        //Override options with center and zoom if set
+        if (vm.ngmapCenter) {
+          vm.ngmapOptions.center = vm.ngmapCenter;
+        }
+        if (vm.ngmapZoom) {
+          vm.ngmapOptions.zoom = vm.ngmapZoom;
+        }
+
+        GoogleMapApi.then(function () {
+          ngMap.options.center = new google.maps.LatLng(ngMap.options.center);
+          console.log('Creating Map', ngMap);
+          ngMap.map = new google.maps.Map(ngMap.div, ngMap.options);
+          ngMap.initMap()
+            .then(function () {
+              resolve(ngMap);
+            });
+        });
+      });
+    }
+
+
     NgMapPool
-      .createMap($element)
-      //New Map Created
+      .findMap(vm.ngmapId)
+      //Map Found
       .then(function (ngMap) {
         console.log('MapReturn', ngMap);
         ngMap.ready
           .then(function () {
-            mapInit(ngMap);
+            $element.append(ngMap.map.getDiv());
             mapReady.resolve(ngMap);
           });
         //Tell everyone the map has rendered
         ngMap.rendered
           .then(function () {
             mapRendered.resolve(ngMap);
-          })
+          });
       })
-      //Map found in pool
-      .catch(function (ngMap) {
-        console.log('MapReturn', ngMap);
-        ngMap.ready
-          .then(function () {
-            mapReady.resolve(ngMap);
-          });
-        //Tell everyone the map has rendered
-        ngMap.rendered
-          .then(function () {
-            mapRendered.resolve(ngMap);
+      //Map Not Found in pool
+      .catch(function () {
+
+        createNgMap()
+          .then(createGoogleMap)
+          .then(function (ngMap) {
+            NgMapPool.addMap(ngMap);
+            ngMap.ready
+              .then(function () {
+                mapReady.resolve(ngMap);
+              });
+            //Tell everyone the map has rendered
+            ngMap.rendered
+              .then(function () {
+                mapRendered.resolve(ngMap);
+              });
           })
+          .catch(function (err) {
+            console.log('Error Creating Map', err);
+          });
       });
 
       //Watchers
@@ -76,31 +151,6 @@
         });
       }
 
-      function mapInit(ngMap) {
-        console.log('mapInit', ngMap, vm);
-        //Set Center
-        if (vm.center) {
-          var center = vm.center;
-          if (!(center instanceof google.maps.LatLng)) {
-            center = new google.maps.LatLng(vm.center);
-          }
-          ngMap.map.setCenter(center);
-        } else {
-          ngMap.map.setCenter({ lat: 38.57641981479348, lng: -95.40967999999997 });
-        }
-
-        //setZoom
-        if (vm.zoom) {
-          ngMap.map.setZoom(vm.zoom);
-        } else {
-          ngMap.map.setZoom(4);
-        }
-      }
-
-      $element.bind('$destroy', function() {
-        console.log('Return Map', vm.map);
-        //MapPool.returnMap(vm.map);
-      });
   }
 
   function ngMap() {
@@ -108,6 +158,7 @@
       restrict: 'AE',
       scope: {
         ngmapId: '@',
+        ngmapClass: '@',
         ngmapCenter: '=',
         ngmapZoom: '=',
         ngmapOptions: '='

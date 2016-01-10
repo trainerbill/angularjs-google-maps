@@ -17,33 +17,22 @@
 
     var factory = {
       getMap: getMap,
-      createMap: createMap,
       addMap: addMap,
       returnMap: returnMap,
-      createDiv: createDiv,
+      findMap: findMap
     }
 
-    //Creates a Map.  Resolves if one is created, rejects if one is found in the pool
-    function createMap(el) {
+    function findMap (id) {
       return $q(function(resolve, reject) {
-        console.log('Map Pool', maps);
-        console.log('Finding Map', el[0].attributes['ngmap-id'].value);
-        var map = lodash.find(maps, { id: el[0].attributes['ngmap-id'].value });
+        var map = lodash.find(maps, { id: id });
         if (!map) {
-          ngMap = new NgMap(el[0].attributes['ngmap-id'].value);
-          ngMap.element = el;
-          createDiv(ngMap)
-            .then(addMap)
-            .then(function (map) {
-              resolve(map);
-            });
-        } else {
-          console.log('Found Map', map);
-          el.append(map.map.getDiv());
-          reject(map);
+          reject();
         }
+        resolve(map);
       });
     }
+
+
 
     function getMap(id) {
       return $q(function(resolve, reject) {
@@ -69,32 +58,11 @@
       });
     }
 
-    function createDiv(ngMap) {
-      return $q(function(resolve, reject) {
 
-        var mapDiv = document.createElement("div");
-        mapDiv.style.width = "100%";
-        mapDiv.style.height = "100%";
-        mapDiv.style.height = '700px';
-        mapDiv.setAttribute('id', ngMap.id);
-
-        ngMap.div = mapDiv;
-        ngMap.element.append(mapDiv);
-
-        resolve(ngMap);
-      });
-    }
 
     function addMap(ngMap) {
       return $q(function(resolve, reject) {
-        GoogleMapApi.then(function () {
-          ngMap.map = new google.maps.Map(ngMap.div, {});
-          ngMap.initMap()
-            .then(function () {
-              maps.push(ngMap);
-              resolve(ngMap);
-            });
-        });
+        maps.push(ngMap);
       });
     }
 

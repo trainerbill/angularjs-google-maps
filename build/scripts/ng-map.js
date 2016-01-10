@@ -1537,9 +1537,28 @@ angular.module('ngMap', ['ngLodash']);
   .module('ngMap')
   .directive('ngMap', ngMap);
 
-  DirectiveController.$inject = [ '$element', '$attrs', 'NgMapPool', 'lodash', '$scope', '$q'];
-  function DirectiveController($element, $attrs, NgMapPool, lodash, $scope, $q) {
+  DirectiveController.$inject = [ '$element', '$attrs', 'NgMapPool', 'lodash', '$scope', '$q', 'NgMap', 'GoogleMapApi'];
+  function DirectiveController($element, $attrs, NgMapPool, lodash, $scope, $q, NgMap, GoogleMapApi) {
     var vm = this;
+
+
+    if (!vm.ngmapId) {
+      void 0;
+      return false;
+    }
+
+    if (!vm.ngmapClass) {
+      void 0;
+      return false;
+    }
+
+    if (!vm.ngmapOptions) {
+      void 0;
+      return false;
+    }
+
+
+
 
     //This Promise tells the child directives that the map is loaded and they can do their thing
     var mapReady = $q.defer();
@@ -1551,34 +1570,90 @@ angular.module('ngMap', ['ngLodash']);
 
     void 0;
 
+
+    //Functions
+    //Creates a NgMap Instance.
+    function createNgMap() {
+      return $q(function(resolve, reject) {
+        ngMap = new NgMap(vm.ngmapId);
+        ngMap.class = vm.ngmapClass;
+        ngMap.options = vm.ngmapOptions;
+        resolve(ngMap);
+      });
+    }
+
+    function createGoogleMap(ngMap) {
+      return $q(function(resolve, reject) {
+
+        //Create Map div
+        var mapDiv = document.createElement("div");
+        mapDiv.className = ngMap.class;
+        mapDiv.setAttribute('id', ngMap.id);
+        ngMap.div = mapDiv;
+
+        //Add Map Div to element
+        $element.append(mapDiv)
+
+        if (!vm.ngmapOptions) {
+          vm.ngmapOptions = {};
+        }
+        //Override options with center and zoom if set
+        if (vm.ngmapCenter) {
+          vm.ngmapOptions.center = vm.ngmapCenter;
+        }
+        if (vm.ngmapZoom) {
+          vm.ngmapOptions.zoom = vm.ngmapZoom;
+        }
+
+        GoogleMapApi.then(function () {
+          ngMap.options.center = new google.maps.LatLng(ngMap.options.center);
+          void 0;
+          ngMap.map = new google.maps.Map(ngMap.div, ngMap.options);
+          ngMap.initMap()
+            .then(function () {
+              resolve(ngMap);
+            });
+        });
+      });
+    }
+
+
     NgMapPool
-      .createMap($element)
-      //New Map Created
+      .findMap(vm.ngmapId)
+      //Map Found
       .then(function (ngMap) {
         void 0;
         ngMap.ready
           .then(function () {
-            mapInit(ngMap);
+            $element.append(ngMap.map.getDiv());
             mapReady.resolve(ngMap);
           });
         //Tell everyone the map has rendered
         ngMap.rendered
           .then(function () {
             mapRendered.resolve(ngMap);
-          })
+          });
       })
-      //Map found in pool
-      .catch(function (ngMap) {
-        void 0;
-        ngMap.ready
-          .then(function () {
-            mapReady.resolve(ngMap);
-          });
-        //Tell everyone the map has rendered
-        ngMap.rendered
-          .then(function () {
-            mapRendered.resolve(ngMap);
+      //Map Not Found in pool
+      .catch(function () {
+
+        createNgMap()
+          .then(createGoogleMap)
+          .then(function (ngMap) {
+            NgMapPool.addMap(ngMap);
+            ngMap.ready
+              .then(function () {
+                mapReady.resolve(ngMap);
+              });
+            //Tell everyone the map has rendered
+            ngMap.rendered
+              .then(function () {
+                mapRendered.resolve(ngMap);
+              });
           })
+          .catch(function (err) {
+            void 0;
+          });
       });
 
       //Watchers
@@ -1608,31 +1683,6 @@ angular.module('ngMap', ['ngLodash']);
         });
       }
 
-      function mapInit(ngMap) {
-        void 0;
-        //Set Center
-        if (vm.center) {
-          var center = vm.center;
-          if (!(center instanceof google.maps.LatLng)) {
-            center = new google.maps.LatLng(vm.center);
-          }
-          ngMap.map.setCenter(center);
-        } else {
-          ngMap.map.setCenter({ lat: 38.57641981479348, lng: -95.40967999999997 });
-        }
-
-        //setZoom
-        if (vm.zoom) {
-          ngMap.map.setZoom(vm.zoom);
-        } else {
-          ngMap.map.setZoom(4);
-        }
-      }
-
-      $element.bind('$destroy', function() {
-        void 0;
-        //MapPool.returnMap(vm.map);
-      });
   }
 
   function ngMap() {
@@ -1640,6 +1690,7 @@ angular.module('ngMap', ['ngLodash']);
       restrict: 'AE',
       scope: {
         ngmapId: '@',
+        ngmapClass: '@',
         ngmapCenter: '=',
         ngmapZoom: '=',
         ngmapOptions: '='
@@ -3321,33 +3372,22 @@ angular.module('ngMap', ['ngLodash']);
 
     var factory = {
       getMap: getMap,
-      createMap: createMap,
       addMap: addMap,
       returnMap: returnMap,
-      createDiv: createDiv,
+      findMap: findMap
     }
 
-    //Creates a Map.  Resolves if one is created, rejects if one is found in the pool
-    function createMap(el) {
+    function findMap (id) {
       return $q(function(resolve, reject) {
-        void 0;
-        void 0;
-        var map = lodash.find(maps, { id: el[0].attributes['ngmap-id'].value });
+        var map = lodash.find(maps, { id: id });
         if (!map) {
-          ngMap = new NgMap(el[0].attributes['ngmap-id'].value);
-          ngMap.element = el;
-          createDiv(ngMap)
-            .then(addMap)
-            .then(function (map) {
-              resolve(map);
-            });
-        } else {
-          void 0;
-          el.append(map.map.getDiv());
-          reject(map);
+          reject();
         }
+        resolve(map);
       });
     }
+
+
 
     function getMap(id) {
       return $q(function(resolve, reject) {
@@ -3373,32 +3413,11 @@ angular.module('ngMap', ['ngLodash']);
       });
     }
 
-    function createDiv(ngMap) {
-      return $q(function(resolve, reject) {
 
-        var mapDiv = document.createElement("div");
-        mapDiv.style.width = "100%";
-        mapDiv.style.height = "100%";
-        mapDiv.style.height = '700px';
-        mapDiv.setAttribute('id', ngMap.id);
-
-        ngMap.div = mapDiv;
-        ngMap.element.append(mapDiv);
-
-        resolve(ngMap);
-      });
-    }
 
     function addMap(ngMap) {
       return $q(function(resolve, reject) {
-        GoogleMapApi.then(function () {
-          ngMap.map = new google.maps.Map(ngMap.div, {});
-          ngMap.initMap()
-            .then(function () {
-              maps.push(ngMap);
-              resolve(ngMap);
-            });
-        });
+        maps.push(ngMap);
       });
     }
 
