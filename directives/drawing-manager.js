@@ -46,7 +46,7 @@
         vm.mapReady.then(function (ngMap) {
           newData.drawingControlOptions.drawingModes = drawingModesParse(newData.drawingControlOptions.drawingModes);
           newData.drawingControlOptions.position = positionParse(newData.drawingControlOptions.position);
-          ngMap.map.setOptions(vm.drawingManagerOptions);
+          ngMap.map.setOptions(newData.drawingControlOptions);
         });
       }
     }, true);
