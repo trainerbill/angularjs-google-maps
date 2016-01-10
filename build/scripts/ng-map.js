@@ -1541,20 +1541,6 @@ angular.module('ngMap', ['ngLodash']);
   function DirectiveController($element, $attrs, NgMapPool, lodash, $scope, $q, NgMap, GoogleMapApi) {
     var vm = this;
 
-
-    if (!vm.ngmapId) {
-      void 0;
-      return false;
-    }
-
-    if (!vm.ngmapClass) {
-      void 0;
-      return false;
-    }
-
-
-
-
     //This Promise tells the child directives that the map is loaded and they can do their thing
     var mapReady = $q.defer();
     vm.mapReady = mapReady.promise;

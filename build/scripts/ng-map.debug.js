@@ -1541,20 +1541,6 @@ angular.module('ngMap', ['ngLodash']);
   function DirectiveController($element, $attrs, NgMapPool, lodash, $scope, $q, NgMap, GoogleMapApi) {
     var vm = this;
 
-
-    if (!vm.ngmapId) {
-      console.log('You must set ngmap-id');
-      return false;
-    }
-
-    if (!vm.ngmapClass) {
-      console.log('You must set ngmap-class.  This is a CSS class that will set the height of the Google Map.  Ex: .ngMap500 { height: 500px; }');
-      return false;
-    }
-
-
-
-
     //This Promise tells the child directives that the map is loaded and they can do their thing
     var mapReady = $q.defer();
     vm.mapReady = mapReady.promise;
