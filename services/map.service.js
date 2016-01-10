@@ -14,9 +14,13 @@
       var renderedPromise = $q.defer();
 
       var service = {
-        id: id,
+        id: id || 'ngmapDefault',
         div: null,
         map: null,
+        options: {
+          center: { lat: 37.783316, lng: -122.440023 },
+          zoom: 4
+        },
         heatmaps: [],
         data: [],
         events: [],

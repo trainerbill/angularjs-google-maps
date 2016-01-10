@@ -55,16 +55,11 @@
         ngMap.div = mapDiv;
 
         //Add Map Div to element
-        $element.append(mapDiv)
+        $element.append(mapDiv);
 
-        var options = vm.ngmapOptions;
+        //Merge default options with given options;
+        var options = lodash.defaults(vm.ngmapOptions, ngMap.options);
 
-        if (!options) {
-          options = {
-            center: { lat: 37.783316, lng: -122.440023 },
-            zoom: 4
-          };
-        }
         //Override options with center and zoom if set
         if (vm.ngmapCenter) {
           options.center = vm.ngmapCenter;
@@ -148,6 +143,17 @@
             console.log('Zoom Changed', newData);
             vm.mapReady.then(function (ngMap) {
               ngMap.map.setZoom(newData);
+            });
+          }
+        });
+      }
+
+      if (vm.ngmapOptions) {
+        $scope.$watch('vm.ngmapOptions', function(newData, oldData) {
+          if (newData !== oldData) {
+            console.log('Zoom Changed', newData);
+            vm.mapReady.then(function (ngMap) {
+              ngMap.map.setOptions(vm.ngmapOptions);
             });
           }
         });

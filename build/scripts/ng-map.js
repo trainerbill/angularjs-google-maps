@@ -1587,16 +1587,11 @@ angular.module('ngMap', ['ngLodash']);
         ngMap.div = mapDiv;
 
         //Add Map Div to element
-        $element.append(mapDiv)
+        $element.append(mapDiv);
 
-        var options = vm.ngmapOptions;
+        //Merge default options with given options;
+        var options = lodash.defaults(vm.ngmapOptions, ngMap.options);
 
-        if (!options) {
-          options = {
-            center: { lat: 37.783316, lng: -122.440023 },
-            zoom: 4
-          };
-        }
         //Override options with center and zoom if set
         if (vm.ngmapCenter) {
           options.center = vm.ngmapCenter;
@@ -1680,6 +1675,17 @@ angular.module('ngMap', ['ngLodash']);
             void 0;
             vm.mapReady.then(function (ngMap) {
               ngMap.map.setZoom(newData);
+            });
+          }
+        });
+      }
+
+      if (vm.ngmapOptions) {
+        $scope.$watch('vm.ngmapOptions', function(newData, oldData) {
+          if (newData !== oldData) {
+            void 0;
+            vm.mapReady.then(function (ngMap) {
+              ngMap.map.setOptions(vm.ngmapOptions);
             });
           }
         });
@@ -2936,9 +2942,13 @@ angular.module('ngMap', ['ngLodash']);
       var renderedPromise = $q.defer();
 
       var service = {
-        id: id,
+        id: id || 'ngmapDefault',
         div: null,
         map: null,
+        options: {
+          center: { lat: 37.783316, lng: -122.440023 },
+          zoom: 4
+        },
         heatmaps: [],
         data: [],
         events: [],
