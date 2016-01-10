@@ -1605,10 +1605,12 @@ angular.module('ngMap', ['ngLodash']);
           options.zoom = vm.ngmapZoom;
         }
 
+        ngMap.options = options;
+
         GoogleMapApi.then(function () {
           ngMap.options.center = new google.maps.LatLng(options.center);
           void 0;
-          ngMap.map = new google.maps.Map(ngMap.div, options);
+          ngMap.map = new google.maps.Map(ngMap.div, ngMap.options);
           ngMap.initMap()
             .then(function () {
               resolve(ngMap);
