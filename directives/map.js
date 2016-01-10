@@ -26,7 +26,6 @@
       return $q(function(resolve, reject) {
         ngMap = new NgMap(vm.ngmapId);
         ngMap.class = vm.ngmapClass;
-        ngMap.options = vm.ngmapOptions;
         resolve(ngMap);
       });
     }
@@ -46,7 +45,8 @@
         $element.append(mapDiv);
 
         //Merge default options with given options;
-        var options = lodash.defaults(vm.ngmapOptions, ngMap.options);
+        console.log('Map Options: ', ngMap.options, vm.ngmapOptions);
+        var options = lodash.defaults(ngMap.options, vm.ngmapOptions);
 
         //Override options with center and zoom if set
         if (vm.ngmapCenter) {
@@ -56,11 +56,12 @@
           options.zoom = vm.ngmapZoom;
         }
 
-        //ngMap.options = options;
+
 
         GoogleMapApi.then(function () {
-          ngMap.options.center = new google.maps.LatLng(options.center);
-          console.log('Creating Map', ngMap);
+          console.log('Creating Map ', ngMap, options);
+          options.center = new google.maps.LatLng(options.center);
+
           ngMap.map = new google.maps.Map(ngMap.div, options);
           ngMap.initMap()
             .then(function () {
