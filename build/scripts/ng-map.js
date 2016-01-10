@@ -124,7 +124,7 @@ angular.module('ngMap', ['ngLodash']);
       if (newData !== oldData) {
         void 0;
         vm.mapReady.then(function (ngMap) {
-          newData.drawingControlOptions.drawingModes(newData.drawingControlOptions.drawingModes);
+          newData.drawingControlOptions.drawingModes = drawingModesParse(newData.drawingControlOptions.drawingModes);
           newData.drawingControlOptions.position = positionParse(newData.drawingControlOptions.position);
           ngMap.map.setOptions(vm.drawingManagerOptions);
         });
