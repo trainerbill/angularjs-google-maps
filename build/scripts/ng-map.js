@@ -85,8 +85,8 @@ angular.module('ngMap', ['ngLodash']);
   .module('ngMap')
   .directive('drawingManager', drawingManager);
 
-  DirectiveController.inject = ['$q', '$scope'];
-  function DirectiveController($q, $scope) {
+  DirectiveController.inject = ['$q', '$scope', 'lodash'];
+  function DirectiveController($q, $scope, lodash) {
     var vm = this;
 
     //Wait for NgMapDirective to resolve the map
@@ -98,15 +98,13 @@ angular.module('ngMap', ['ngLodash']);
 
     vm.mapReady.then(function (ngMap) {
       vm.drawingManager = new google.maps.drawing.DrawingManager();
-      var options = vm.drawingManagerOptions;
-
-      //Change given options to the google equivalent
+      var options = angular.copy(vm.drawingManagerOptions);
+      void 0;
       options.drawingControlOptions.drawingModes = drawingModesParse(options.drawingControlOptions.drawingModes);
-
-      //Change position to the google equivalent
       options.drawingControlOptions.position = positionParse(options.drawingControlOptions.position);
 
-      void 0;
+
+
 
       vm.drawingManager.setOptions(options);
       vm.drawingManager.setMap(ngMap.map);
@@ -120,18 +118,34 @@ angular.module('ngMap', ['ngLodash']);
       });
     }
 
-    $scope.$watch('vm.drawingManagerOptions', function(newData, oldData) {
-      if (newData !== oldData) {
-        void 0;
-        vm.mapReady.then(function (ngMap) {
-          newData.drawingControlOptions.drawingModes = drawingModesParse(newData.drawingControlOptions.drawingModes);
-          newData.drawingControlOptions.position = positionParse(newData.drawingControlOptions.position);
-          ngMap.map.setOptions(newData.drawingControlOptions);
-        });
-      }
-    }, true);
+
+    if (vm.drawingManagerOptions) {
+      $scope.$watch('vm.drawingManagerOptions', function(newData, oldData) {
+        if (newData !== oldData) {
+          void 0;
+          var watchOptions = angular.copy(newData);
+          void 0;
+          watchOptions.drawingControlOptions.drawingModes = drawingModesParse(watchOptions.drawingControlOptions.drawingModes);
+          watchOptions.drawingControlOptions.position = positionParse(watchOptions.drawingControlOptions.position);
+          vm.drawingManager.setOptions(watchOptions);
+          /*
+          console.log('DrawingManagerOptions::Watch::Options', newData.drawingControlOptions);
+          var watchOptions = newData;
+          //Change given options to the google equivalent
+          watchOptions.drawingControlOptions.drawingModes = drawingModesParse(newData.drawingControlOptions.drawingModes);
+          //Change position to the google equivalent
+          watchOptions.drawingControlOptions.position = positionParse(newData.drawingControlOptions.position);
+          vm.drawingManager.setOptions(watchOptions);
+          */
+        }
+      }, true);
+    }
+
+
+
 
     function drawingModesParse(modes) {
+      void 0;
       var rmodes = [];
       modes.forEach(function (mode) {
         rmodes.push(google.maps.drawing.OverlayType[mode]);
