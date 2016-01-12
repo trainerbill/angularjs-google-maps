@@ -114,7 +114,8 @@ angular.module('ngMap', ['ngLodash']);
     //Set Events
     if (vm.drawingManagerEvents) {
       vm.mapReady.then(function (map) {
-        map.setEvents(vm.vm.drawingManagerEvents);
+        console.log('Adding Events::Init', vm.drawingManagerEvents);
+        map.setEvents(vm.drawingManagerEvents, vm.drawingManager);
       });
     }
 
@@ -141,6 +142,18 @@ angular.module('ngMap', ['ngLodash']);
       }, true);
     }
 
+    if (vm.drawingManagerMode) {
+      $scope.$watch('vm.drawingManagerMode', function(newData, oldData) {
+        if (newData !== oldData) {
+          console.log('Draw Mode Changed', newData);
+          vm.mapReady.then(function () {
+            vm.drawingManager.setDrawingMode(newData);
+          });
+        }
+      });
+    }
+
+
 
 
 
@@ -166,7 +179,9 @@ angular.module('ngMap', ['ngLodash']);
       require: ['^ngMap'],
       scope: {
         drawingManagerEvents: '=',
-        drawingManagerOptions: '='
+        drawingManagerOptions: '=',
+        drawingManagerEvents: '=',
+        drawingManagerMode: '='
       },
       controller: DirectiveController,
       controllerAs: 'vm',
@@ -264,12 +279,7 @@ angular.module('ngMap', ['ngLodash']);
         });
     });
 
-    //Set Events
-    if (vm.ngmapEvents) {
-      vm.mapReady.then(function (map) {
-        map.setEvents(vm.ngmapEvents);
-      });
-    }
+    
 
     $scope.$watch('vm.ngmapData', function(newData, oldData) {
       if (newData !== oldData) {
@@ -343,6 +353,16 @@ angular.module('ngMap', ['ngLodash']);
     //This Promise tells the child directives that the map is rendered and they can do their thing.  Used in custom controls
     var mapRendered = $q.defer();
     vm.mapRendered = mapRendered.promise;
+
+
+
+    //Set Events
+    if (vm.ngmapEvents) {
+      vm.mapReady.then(function (map) {
+        console.log('Adding Events::Init', vm.ngmapEvents);
+        map.setEvents(vm.ngmapEvents);
+      });
+    }
 
     console.log('ngMapDirective::Init', vm);
 
@@ -485,7 +505,8 @@ angular.module('ngMap', ['ngLodash']);
         ngmapClass: '@',
         ngmapCenter: '=',
         ngmapZoom: '=',
-        ngmapOptions: '='
+        ngmapOptions: '=',
+        ngmapEvents: '='
       },
       controller: DirectiveController,
       controllerAs: 'vm',
@@ -516,7 +537,14 @@ angular.module('ngMap', ['ngLodash']);
         console.log('Loading Script');
         // Use global document since Angular's $document is weak
         var script = document.createElement('script');
-        script.src = '//maps.google.com/maps/api/js?libraries=drawing,geometry,visualization&callback=ngMapCallback';
+        var url;
+        
+        if ($window.location.protocol === 'file:') {
+          url = 'http://maps.google.com/maps/api/js?libraries=drawing,geometry,visualization&callback=ngMapCallback';
+        } else {
+          url = '//maps.google.com/maps/api/js?libraries=drawing,geometry,visualization&callback=ngMapCallback';
+        }
+        script.src = url;
         document.body.appendChild(script);
     }
 
@@ -614,20 +642,24 @@ angular.module('ngMap', ['ngLodash']);
         });
       }
 
-      function setEvents(events) {
+      function setEvents(events, obj) {
         return $q(function(resolve, reject) {
           var listener;
           console.log('Setting Events', service.events);
           events.forEach(function (evnt) {
             getEvent(evnt.type)
               .then(function (serviceEvent) {
+                var setOn = obj || service.map;
                 console.log('Event Found', serviceEvent);
                 google.maps.event.removeListener(serviceEvent.listener);
-                listener = google.maps.event.addListener(service.map, evnt.type, evnt.func);
+                listener = google.maps.event.addListener(setOn, evnt.type, evnt.func);
                 serviceEvent.listener = listener;
               })
               .catch(function () {
-                listener = google.maps.event.addListener(service.map, evnt.type, evnt.func);
+                var setOn = obj || service.map;
+                console.log('Setting Event', evnt);
+                listener = google.maps.event.addListener(setOn, evnt.type, evnt.func);
+                console.log('Event Set', listener);
                 service.events.push({ type: evnt.type, listener: listener })
               });
           });

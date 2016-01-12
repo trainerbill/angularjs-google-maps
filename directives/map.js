@@ -17,6 +17,16 @@
     var mapRendered = $q.defer();
     vm.mapRendered = mapRendered.promise;
 
+
+
+    //Set Events
+    if (vm.ngmapEvents) {
+      vm.mapReady.then(function (map) {
+        console.log('Adding Events::Init', vm.ngmapEvents);
+        map.setEvents(vm.ngmapEvents);
+      });
+    }
+
     console.log('ngMapDirective::Init', vm);
 
 
@@ -158,7 +168,8 @@
         ngmapClass: '@',
         ngmapCenter: '=',
         ngmapZoom: '=',
-        ngmapOptions: '='
+        ngmapOptions: '=',
+        ngmapEvents: '='
       },
       controller: DirectiveController,
       controllerAs: 'vm',

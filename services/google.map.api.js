@@ -15,7 +15,14 @@
         console.log('Loading Script');
         // Use global document since Angular's $document is weak
         var script = document.createElement('script');
-        script.src = '//maps.google.com/maps/api/js?libraries=drawing,geometry,visualization&callback=ngMapCallback';
+        var url;
+        
+        if ($window.location.protocol === 'file:') {
+          url = 'http://maps.google.com/maps/api/js?libraries=drawing,geometry,visualization&callback=ngMapCallback';
+        } else {
+          url = '//maps.google.com/maps/api/js?libraries=drawing,geometry,visualization&callback=ngMapCallback';
+        }
+        script.src = url;
         document.body.appendChild(script);
     }
 

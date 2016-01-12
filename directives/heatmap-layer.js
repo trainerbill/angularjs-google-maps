@@ -22,12 +22,7 @@
         });
     });
 
-    //Set Events
-    if (vm.ngmapEvents) {
-      vm.mapReady.then(function (map) {
-        map.setEvents(vm.ngmapEvents);
-      });
-    }
+    
 
     $scope.$watch('vm.ngmapData', function(newData, oldData) {
       if (newData !== oldData) {

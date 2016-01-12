@@ -2,53 +2,88 @@
 <html ng-app="myapp">
 <head>
 <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
-<script src="script-tags-for-development.js"></script>
-<script src="taxi-data.js"></script>
+<script src="https://code.angularjs.org/1.3.15/angular.js"></script>
+<script src="../build/scripts/ng-map.debug.js"></script>
 <script>
   var app = angular.module('myapp', ['ngMap']);
-  app.controller('LayerHeatmapCtrl', function(NgMap) {
+  app.controller('LayerHeatmapCtrl', [ 'NgMapPool', '$timeout', '$scope', function(NgMapPool, $timeout, $scope) {
     var heatmap, vm = this;
-    NgMap.getMap().then(function(map) {
-      vm.map = map;
-      heatmap = vm.map.heatmapLayers.foo;
+    taxiData = [];
+    vm.center = { lat: 37.783316, lng: -122.440023 };
+    vm.zoom = 15;
+    vm.options = {};
+
+    vm.events = [];
+    vm.events.push({
+      type: 'idle',
+      func: function () {
+
+
+        $scope.$apply(function () {
+          vm.data = [
+            new google.maps.LatLng(37.782992, -122.442112),
+            new google.maps.LatLng(37.783100, -122.441461),
+            new google.maps.LatLng(37.783206, -122.440829),
+            new google.maps.LatLng(37.783273, -122.440324),
+            new google.maps.LatLng(37.783316, -122.440023)
+          ];
+        })
+        console.log('Idle Event', vm.data);
+      }
     });
 
-    vm.toggleHeatmap= function(event) {
-      heatmap.setMap(heatmap.getMap() ? null : vm.map);
-    };
+    NgMapPool.getMap('taxiLocations').then(function(map) {
+        vm.mainData = [
+          new google.maps.LatLng(37.782551, -122.445368),
+          new google.maps.LatLng(37.782745, -122.444586),
+          new google.maps.LatLng(37.782842, -122.443688),
+          new google.maps.LatLng(37.782919, -122.442815),
+          new google.maps.LatLng(37.782992, -122.442112),
+          new google.maps.LatLng(37.783100, -122.441461),
+          new google.maps.LatLng(37.783206, -122.440829),
+          new google.maps.LatLng(37.783273, -122.440324),
+          new google.maps.LatLng(37.783316, -122.440023),
+          new google.maps.LatLng(37.783357, -122.439794),
+          new google.maps.LatLng(37.783371, -122.439687),
+          new google.maps.LatLng(37.783368, -122.439666),
+          new google.maps.LatLng(37.783383, -122.439594),
+          new google.maps.LatLng(37.783508, -122.439525)
+        ]
+        vm.data = vm.mainData;
 
-    vm.changeGradient = function() {
-      var gradient = [
-        'rgba(0, 255, 255, 0)',
-        'rgba(0, 255, 255, 1)',
-        'rgba(0, 191, 255, 1)',
-        'rgba(0, 127, 255, 1)',
-        'rgba(0, 63, 255, 1)',
-        'rgba(0, 0, 255, 1)',
-        'rgba(0, 0, 223, 1)',
-        'rgba(0, 0, 191, 1)',
-        'rgba(0, 0, 159, 1)',
-        'rgba(0, 0, 127, 1)',
-        'rgba(63, 0, 91, 1)',
-        'rgba(127, 0, 63, 1)',
-        'rgba(191, 0, 31, 1)',
-        'rgba(255, 0, 0, 1)'
-      ]
-      heatmap.set('gradient', heatmap.get('gradient') ? null : gradient);
-    }
+        $timeout(function () {
+          console.log('Clearing data');
+          vm.data = [new google.maps.LatLng(37.783368, -122.439666)];
+        }, 3000);
 
-    vm.changeRadius = function() {
-      heatmap.set('radius', heatmap.get('radius') ? null : 20);
-    }
+        $timeout(function () {
+          console.log('Clearing data');
+          vm.radius = 5;
+          vm.data = [new google.maps.LatLng(37.782842, -122.443688),
+          new google.maps.LatLng(37.782919, -122.442815),
+          new google.maps.LatLng(37.782992, -122.442112),
+          new google.maps.LatLng(37.783100, -122.441461),
+          new google.maps.LatLng(37.783206, -122.440829),
+          new google.maps.LatLng(37.783273, -122.440324),
+          new google.maps.LatLng(37.783316, -122.440023),
+          new google.maps.LatLng(37.783357, -122.439794)];
+        }, 6000);
 
-    vm.changeOpacity = function() {
-      heatmap.set('opacity', heatmap.get('opacity') ? null : 0.2);
-    }
-  });
+        $timeout(function () {
+          vm.zoom = 13;
+          vm.radius = 30;
+        }, 4000);
+
+
+
+    });
+
+  }]);
 </script>
 </head>
 <body>
   <style>
+    .ngmap{height: 400px;}
     div[ng-controller=LayerHeatmapCtrl] {
       position:relative;
     }
@@ -64,14 +99,9 @@
     }
   </style>
   <div ng-controller="LayerHeatmapCtrl as vm">
-    <div id="panel">
-      <button ng-click="vm.toggleHeatmap()">Toggle Heatmap</button>
-      <button ng-click="vm.changeGradient()">Change gradient</button>
-      <button ng-click="vm.changeRadius()">Change radius</button>
-      <button ng-click="vm.changeOpacity()">Change opacity</button>
-    </div>
-    <ng-map zoom="13" center="37.774546, -122.433523" map-type-id="SATELLITE">
-      <heatmap-layer id="foo" data="taxiData"></heatmap>
+
+    <ng-map ngmap-id="taxiLocations" ngmap-class="ngmap" ngmap-center="vm.center" ngmap-zoom="vm.zoom" ngmap-options="vm.options" ngmap-events="vm.events">
+      <heatmap-layer ngmap-heatmap-id="foo" ngmap-data="vm.data" radius="vm.radius"></heatmap-layer>
     </ng-map>
   </div>
 </body>

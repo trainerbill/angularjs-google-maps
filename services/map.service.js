@@ -80,20 +80,24 @@
         });
       }
 
-      function setEvents(events) {
+      function setEvents(events, obj) {
         return $q(function(resolve, reject) {
           var listener;
           console.log('Setting Events', service.events);
           events.forEach(function (evnt) {
             getEvent(evnt.type)
               .then(function (serviceEvent) {
+                var setOn = obj || service.map;
                 console.log('Event Found', serviceEvent);
                 google.maps.event.removeListener(serviceEvent.listener);
-                listener = google.maps.event.addListener(service.map, evnt.type, evnt.func);
+                listener = google.maps.event.addListener(setOn, evnt.type, evnt.func);
                 serviceEvent.listener = listener;
               })
               .catch(function () {
-                listener = google.maps.event.addListener(service.map, evnt.type, evnt.func);
+                var setOn = obj || service.map;
+                console.log('Setting Event', evnt);
+                listener = google.maps.event.addListener(setOn, evnt.type, evnt.func);
+                console.log('Event Set', listener);
                 service.events.push({ type: evnt.type, listener: listener })
               });
           });

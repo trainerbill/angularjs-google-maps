@@ -34,7 +34,8 @@
     //Set Events
     if (vm.drawingManagerEvents) {
       vm.mapReady.then(function (map) {
-        map.setEvents(vm.vm.drawingManagerEvents);
+        console.log('Adding Events::Init', vm.drawingManagerEvents);
+        map.setEvents(vm.drawingManagerEvents, vm.drawingManager);
       });
     }
 
@@ -61,6 +62,18 @@
       }, true);
     }
 
+    if (vm.drawingManagerMode) {
+      $scope.$watch('vm.drawingManagerMode', function(newData, oldData) {
+        if (newData !== oldData) {
+          console.log('Draw Mode Changed', newData);
+          vm.mapReady.then(function () {
+            vm.drawingManager.setDrawingMode(newData);
+          });
+        }
+      });
+    }
+
+
 
 
 
@@ -86,7 +99,9 @@
       require: ['^ngMap'],
       scope: {
         drawingManagerEvents: '=',
-        drawingManagerOptions: '='
+        drawingManagerOptions: '=',
+        drawingManagerEvents: '=',
+        drawingManagerMode: '='
       },
       controller: DirectiveController,
       controllerAs: 'vm',
